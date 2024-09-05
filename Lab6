@@ -1,0 +1,103 @@
+#include <Arduino.h>
+#include <LiquidCrystal_I2C.h>
+
+#include <LiquidCrystal_I2C.h>
+#include <Arduino.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Crear un objeto LCD (dirección pantalla, Tamaño x, Tamaño y)
+#define P_1 12
+#define P_2 14
+#define bot_suma 32
+#define bot_resta 33
+
+int contador = 0;
+int valorp1 = 0;
+int valorp2 = 0;
+char voltaje1[5]; // Array de caracteres para almacenar voltaje como cadena
+char voltaje2[5]; // Array de caracteres para almacenar voltaje como cadena
+char valor_contador[5];//Array de caracteres para lamacenar el valor de contador como cadena 
+
+void IRAM_ATTR bot_resta_ISR();
+void IRAM_ATTR bot_suma_ISR();
+void Pot_Lect();
+void LCD_proyect();
+
+portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+unsigned long bot_T_lastlL = 0;
+unsigned long t_rebote = 5;
+volatile int lectura = 0;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(P_1, INPUT);
+  pinMode(P_2, INPUT);
+  pinMode(bot_suma, INPUT_PULLUP);
+  pinMode(bot_resta, INPUT_PULLUP);
+  
+  lcd.init();
+  lcd.backlight(); // Configuración correcta de LCD (16x2)
+  lcd.print("Hola luchier");
+  delay(2000);
+  
+  attachInterrupt(digitalPinToInterrupt(bot_suma), bot_suma_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(bot_resta), bot_resta_ISR, RISING);
+}
+
+void loop() {
+  // Retardo para estabilidad
+  Pot_Lect();
+  LCD_proyect();
+}
+
+void IRAM_ATTR bot_suma_ISR(void) {
+  unsigned long currentTime = millis();
+  if (currentTime - bot_T_lastlL > t_rebote) {
+    portENTER_CRITICAL_ISR(&mux);
+    contador++;
+    Serial.println("Interrupción activada");
+    portEXIT_CRITICAL_ISR(&mux);
+    bot_T_lastlL = currentTime;
+  }
+}
+
+void IRAM_ATTR bot_resta_ISR(void) {
+  unsigned long currentTime = millis();
+  if (currentTime - bot_T_lastlL > t_rebote) {
+    portENTER_CRITICAL_ISR(&mux);
+    contador--;
+    Serial.println("Interrupción activada");
+    portEXIT_CRITICAL_ISR(&mux);
+    bot_T_lastlL = currentTime;
+  }
+}
+
+void Pot_Lect(void){
+  valorp1 = analogRead(P_1);
+  valorp2 = analogRead(P_2);
+  
+  // Convertir los valores de entero a cadena de caracteres
+  itoa(valorp1, voltaje1, 10); // Convertir valorp1 a cadena (base 10)
+  itoa(valorp2, voltaje2, 10); // Convertir valorp2 a cadena (base 10)
+  
+  Serial.println(voltaje1);
+  Serial.println("\n");
+  Serial.println(voltaje2);
+}
+
+void LCD_proyect(void){
+  itoa(contador,valor_contador,10);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Pot1:");
+  lcd.setCursor(6, 0);
+  lcd.print(voltaje1); // Mostrar voltaje1 convertido a cadena
+  lcd.setCursor(0, 1);
+  lcd.print("Pot2:");
+  lcd.setCursor(6, 1);
+  lcd.print(voltaje2); // Mostrar voltaje2 convertido a cadena
+  lcd.setCursor(12,0);
+  lcd.print("cont");
+  lcd.setCursor(12,1);
+  lcd.print(valor_contador);
+  delay(2000);
+}
