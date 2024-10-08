@@ -1,0 +1,83 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <HardwareSerial.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+
+const int potPin1 = 34; 
+const int potPin2 = 35; 
+
+
+const int buttonInc = 18;  // Botón para incrementar
+const int buttonDec = 19;  // Botón para decrementar
+
+
+uint8_t contador = 0;
+
+void setup() {
+  Serial.begin(115200);
+  
+  
+   lcd.init();
+  lcd.backlight(); 
+  lcd.print("Hola luchier");
+  delay(2000);
+
+
+ 
+
+  
+  pinMode(buttonInc, INPUT_PULLUP);
+  pinMode(buttonDec, INPUT_PULLUP);
+}
+
+void loop() {
+  
+  int potValue1 = analogRead(potPin1);
+  int potValue2 = analogRead(potPin2);
+
+ 
+  float voltage1 = potValue1 * (3.3 / 4095.0);
+  float voltage2 = potValue2 * (3.3 / 4095.0);
+
+  
+  if (digitalRead(buttonInc) == LOW) {
+    
+    if (contador < 255) {
+      contador++;
+      delay(200); 
+    }
+  }
+
+  if (digitalRead(buttonDec) == LOW) {
+    
+    if (contador > 0) {
+      contador--;
+      delay(200); 
+    }
+  }
+
+  
+  lcd.clear();
+
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Volt P1: ");
+  lcd.print(voltage1, 2); 
+  lcd.print(" V");
+
+ 
+  lcd.setCursor(0, 1);
+  lcd.print("Volt P2: ");
+  lcd.print(voltage2, 2);
+  lcd.print(" V");
+
+  
+  lcd.setCursor(10, 1);
+  lcd.print("Cont: ");
+  lcd.print(contador); 
+
+  
+  delay(100);
+}
